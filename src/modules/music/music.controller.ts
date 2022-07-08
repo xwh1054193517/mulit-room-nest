@@ -21,6 +21,11 @@ export class MusicController {
     return this.musicService.search(param)
   }
 
+  @Get('/quickSearch')
+  quickSearch(@Query() param: searchDto) {
+    return this.musicService.quickSearch(param)
+  }
+
   @Get('/daily')
   recommend() {
     return this.musicService.recommend()

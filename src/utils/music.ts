@@ -1,12 +1,11 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
 const qqMusic = require('qq-music-api')
 
-qqMusic.setCookie('xxxxx')
+qqMusic.setCookie('xxx')
 export const searchSong = async (param, page, pagesize) => {
   const songlist = []
   try {
-    const res = await qqMusic.api('search', { key: param, pageNo: page, pageSize: pagesize })
-
+    const res = await qqMusic.api('/search', { key: param, pageNo: page, pageSize: pagesize })
     res.list.forEach((item) => {
       const response: any = {}
       response.music_mid = item.songmid
@@ -17,8 +16,35 @@ export const searchSong = async (param, page, pagesize) => {
       response.music_duration = item.interval
       songlist.push(response)
     })
-    return songlist
+    return res
   } catch (error) {
+    // console.log(error);
+
+    throw new HttpException('服务器繁忙或无歌曲', HttpStatus.BAD_GATEWAY)
+  }
+}
+
+//快速少量搜索
+export const searchQuick = async (param) => {
+  console.log(param);
+  const ret = []
+  let request = []
+  try {
+    const res = await qqMusic.api('/search/quick', { key: param })
+    const songlist = res.song.itemlist
+    songlist.forEach(k => {
+      request.push(getMusicInfo(k.mid))
+    });
+    let p = await Promise.allSettled(request)
+    p.forEach(k => {
+      const temp = k['value']['music_info']
+      delete temp.choose_user_id
+      ret.push(temp)
+    })
+    return ret
+  } catch (error) {
+    // console.log(error);
+
     throw new HttpException('服务器繁忙或无歌曲', HttpStatus.BAD_GATEWAY)
   }
 }
@@ -73,6 +99,7 @@ export const getMusicSRC = async (mid) => {
     return { music_lrc: p[1]['value']['lyric'], music_src: p[0]['value'][`${mid}`], music_downloadSrc: p[2]['value'] }
   } catch (error) {
     console.log(error);
+    throw new HttpException('没有找到或者无权获得播放链接(cookie)', HttpStatus.BAD_GATEWAY)
 
   }
 }

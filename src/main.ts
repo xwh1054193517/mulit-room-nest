@@ -13,7 +13,7 @@ async function bootstrap() {
   //异常过滤器,可以控制精确的控制流以及将响应的内容发送回客户端。
   app.useGlobalFilters(new HttpExceptionFilter());
   //jwt权限认证
-  // app.useGlobalGuards(new AuthGuard())
+  app.useGlobalGuards(new AuthGuard())
   //管道参数验证
   app.useGlobalPipes(new ValidationPipe());
   //响应拦截器

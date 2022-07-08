@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { getMusicInfo, getMusicSRC, initMusicByApi, recommend, searchSong } from 'src/utils/music';
+import { getMusicInfo, getMusicSRC, initMusicByApi, recommend, searchQuick, searchSong } from 'src/utils/music';
 import { Repository } from 'typeorm';
 import { CollectEntity } from './entities/collect.entity';
 import { MusicEntity } from './entities/music.entity';
@@ -13,13 +13,19 @@ export class MusicService {
     private readonly MusicRepository: Repository<MusicEntity>,
     @InjectRepository(CollectEntity)
     private readonly CollectRepository: Repository<CollectEntity>
-  ) {  }
+  ) { }
 
 
   //搜索歌曲
   async search(param: any) {
     const { keyword, page = 1, pagesize = 20 } = param
     return await searchSong(keyword, page, pagesize)
+  }
+
+  //快速搜索
+  async quickSearch(param: any) {
+    const { keyword } = param
+    return await searchQuick(keyword)
   }
 
   //推荐歌曲
