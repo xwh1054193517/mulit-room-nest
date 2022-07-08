@@ -27,6 +27,5 @@ const proConfig: DataSourceOptions = {
   synchronize: true,
 };
 
-const config: DataSourceOptions =devConfig;
-
+const config: DataSourceOptions = process.env.NODE_ENV == 'production' ? proConfig : devConfig;
 export default config;
