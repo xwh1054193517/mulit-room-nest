@@ -63,8 +63,6 @@ export class UsersService {
   async getUserInfo(payload) {
 
     const { user_id: id, exp } = payload
-    console.log(payload);
-
     const res = await this.UserRepository.findOne({
       where: { id: id },
       select: [

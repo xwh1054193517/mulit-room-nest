@@ -17,7 +17,7 @@ import { getMusicInfo, getMusicSRC } from 'src/utils/music';
 
 
 //开启websocket服务
-@WebSocketGateway(4001, {
+@WebSocketGateway(3002, {
   //兼容socketIO2.x
   allowEIO3: true,
   path: '/chat',
@@ -63,12 +63,18 @@ export class ChattingGateway {
   }
 
   /* -----------------------用户操作------------------------*/
-  async handleConnect(client: Socket): Promise<any> {
+  async handleConnection(client: Socket): Promise<any> {
+    console.log('用户连接');
     this.connectToRoom(client, client.handshake.query)
+   
   }
 
   //用户断开连接 
   async handleDisconnect(client: Socket) {
+    console.log('client', this.clientMap[client.id]);
+    console.log('onlineUser', this.onlineUser);
+    console.log('roomlist', this.roomList);
+    console.log('用户断开');
     const clientUser = this.clientMap[client.id]
     if (!clientUser) return
     //删除用户

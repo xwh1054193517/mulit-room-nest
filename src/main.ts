@@ -22,10 +22,10 @@ async function bootstrap() {
   setupSwagger(app);
   //开启跨域
   app.enableCors();
-  await app.listen(3000, () => {
-    Logger.log(`API服务已经启动,服务请访问:http://localhost:3000`);
-    Logger.log(`WebSocket服务已经启动,服务请访问:http://localhost:3001`);
-    Logger.log(`swagger已经启动,服务请访问:http://localhost:3000/apiSwagger`);
+  await app.listen(3001, () => {
+    Logger.log(`API服务已经启动,服务请访问:http://localhost:3001`);
+    Logger.log(`WebSocket服务已经启动,服务请访问:http://localhost:3002`);
+    Logger.log(`swagger已经启动,服务请访问:http://localhost:3001/apiSwagger`);
   });
 }
 bootstrap();
