@@ -71,9 +71,9 @@ export class ChattingGateway {
 
   //用户断开连接 
   async handleDisconnect(client: Socket) {
-    console.log('client', this.clientMap[client.id]);
-    console.log('onlineUser', this.onlineUser);
-    console.log('roomlist', this.roomList);
+    // console.log('client', this.clientMap[client.id]);
+    // console.log('onlineUser', this.onlineUser);
+    // console.log('roomlist', this.roomList);
     console.log('用户断开');
     const clientUser = this.clientMap[client.id]
     if (!clientUser) return
@@ -105,7 +105,6 @@ export class ChattingGateway {
     }
     //通知用户离开 通知这个房间的
     ///这里的身份好像不对劲 
-    console.log(user_id);
     this.socketServer.to(room_id).emit('offline', {
       code: 1,
       online_user_list: formatUser(online_user_list, room_admin.id),
@@ -270,7 +269,7 @@ export class ChattingGateway {
     music.user_info = userInfo
     music_queue_list.push(music)
     this.chooseMusicTimewithUser[user_id] = getTimeSpace()
-    client.emit('success', { code: 1, msg: `点歌成功` })
+    client.emit('tips', { code: 1, msg: `点歌成功` })
     this.socketServer.to(room_id).emit('chooseMusic', {
       code: 1,
       music_queue_list,
@@ -370,7 +369,7 @@ export class ChattingGateway {
       //歌曲信息出错 就说明这个歌曲不能播放了，切换下一首
       music_queue_list.shift()
       this.changeMusic(room_id)
-      return this.socketServer.to(room_id).emit('info', {
+      return this.socketServer.to(room_id).emit('notice', {
         code: -1,
         msg: `当前歌曲无法播放，已自动跳过`
       })
