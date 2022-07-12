@@ -66,7 +66,7 @@ export class ChattingGateway {
   async handleConnection(client: Socket): Promise<any> {
     console.log('用户连接');
     this.connectToRoom(client, client.handshake.query)
-   
+
   }
 
   //用户断开连接 
@@ -98,11 +98,14 @@ export class ChattingGateway {
       //通知所有人 每个在线用户 房间列表更新
       const { room_name } = room_info
       const { user_nickname: roomAdminNickname } = room_admin
-      return this.socketServer.emit('updateRoomList', {
+      return this.socketServer.emit('updateRoomlist', {
         room_list: formatRoomlist(this.roomList),
         msg: `${roomAdminNickname}的房间${room_name}(id:${room_id})因为全部人退出而关闭`
       })
     }
+    this.socketServer.emit('updateRoomlist', {
+      room_list: formatRoomlist(this.roomList),
+    })
     //通知用户离开 通知这个房间的
     ///这里的身份好像不对劲 
     this.socketServer.to(room_id).emit('offline', {
@@ -335,7 +338,6 @@ export class ChattingGateway {
     //获取下一首歌的mid，点歌人信息
     const { mid, user_info, music_queue_list } = await this.getNextMusic(room_id);
     try {
-
       //获得歌曲的详细信息
       const { music_info } = await getMusicInfo(mid)
       //如果有点歌人，就带上他的id，没有标为-1为系统随机播放
@@ -356,6 +358,10 @@ export class ChattingGateway {
         musicInfo: { music_info, music_src, music_lrc, music_downloadSrc, music_queue_list },
         msg: `正在播放${user_info ? user_info.user_nickname : '系统随机'}点播的${music_name}(${music_singer}-${music_album})`
       })
+      // console.log('切歌了:', {
+      //   musicInfo: { music_info, music_src, music_lrc, music_downloadSrc, music_queue_list },
+      //   msg: `正在播放${user_info ? user_info.user_nickname : '系统随机'}点播的${music_name}(${music_singer}-${music_album})`
+      // });
 
       //设置定时器，歌曲时长结束后自动切歌,每次切歌都先清除然后再设置
       clearTimeout(this.timerInRoom[`timer${room_id}`])
@@ -502,7 +508,7 @@ export class ChattingGateway {
       //查询房间的信息
       const room_info = await this.RoomRepository.findOne({
         where: { room_id },
-        select: ['room_id', 'room_user_id', 'room_avatar', 'room_notice', 'room_bg', 'room_need']
+        select: ['room_id', 'room_user_id', 'room_avatar', 'room_notice', 'room_bg', 'room_need','room_name']
       })
       if (!room_info) {
         client.emit('tips', {
