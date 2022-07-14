@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Request } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { configureCookie } from 'src/utils/music';
 import { searchDto } from './dto/search.dto';
@@ -52,7 +52,7 @@ export class MusicController {
   }
 
   @Post('/remove')
-  removeCollect(@Request() req, @Query() param) {
+  removeCollect(@Request() req, @Body() param) {
     return this.musicService.removeCollect(req.payload, param)
   }
 }

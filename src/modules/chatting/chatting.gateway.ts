@@ -64,23 +64,20 @@ export class ChattingGateway {
 
   /* -----------------------用户操作------------------------*/
   async handleConnection(client: Socket): Promise<any> {
-    console.log('用户连接');
     this.connectToRoom(client, client.handshake.query)
 
   }
 
   //用户断开连接 
   async handleDisconnect(client: Socket) {
-    // console.log('client', this.clientMap[client.id]);
-    // console.log('onlineUser', this.onlineUser);
-    // console.log('roomlist', this.roomList);
-    console.log('用户断开');
+
     const clientUser = this.clientMap[client.id]
     if (!clientUser) return
     //删除用户
     delete this.clientMap[client.id]
     const { user_id, room_id } = clientUser
     const { online_user_list, room_info, room_admin } = this.roomList[Number(room_id)]
+    console.log(`用户离开了${room_id}`);
     //拿到名称用于广播
     let user_nickname;
     const shoulddelIdx = online_user_list.findIndex((item) => {
@@ -240,12 +237,13 @@ export class ChattingGateway {
       message_type: 'info',
       message_content: `${user_nickname} 切掉了${music_name}(${music_singer})`,
     })
-    this.changeMusic(Number(room_id))
+    this.changeMusic(room_id)
   }
 
   //点歌 将歌曲添加到房间歌单列表
   @SubscribeMessage('chooseMusic')
   async handleChooseMusic(client: Socket, music: any) {
+    
     const { user_id, room_id } = this.clientMap[client.id]
     const userInfo: any = await this.getUserInfoByClientId(client.id)
     const { music_name, music_mid, music_singer } = music
@@ -343,7 +341,8 @@ export class ChattingGateway {
       //如果有点歌人，就带上他的id，没有标为-1为系统随机播放
       music_info.choose_user_id = user_info ? user_info.id : -1
       //获取歌曲地址和歌词
-      const { music_lrc, music_src, music_downloadSrc } = await getMusicSRC(mid)
+      let { music_lrc, music_src, music_downloadSrc } = await getMusicSRC(mid)
+      music_src=music_src+`?${new Date().getTime()}`
       this.roomList[Number(room_id)].music_info = music_info
       this.roomList[Number(room_id)].music_src = music_src
       this.roomList[Number(room_id)].music_lrc = music_lrc
@@ -467,6 +466,8 @@ export class ChattingGateway {
     try {
       //获得用户身份 验证是否登录
       const { token, address, room_id = 555 } = query
+      console.log(`用户进入了房间${room_id}`);
+
       const payload = await verfiyJwt(token)
       const { user_id } = payload
       if (user_id === -1 || !token) {
@@ -508,7 +509,7 @@ export class ChattingGateway {
       //查询房间的信息
       const room_info = await this.RoomRepository.findOne({
         where: { room_id },
-        select: ['room_id', 'room_user_id', 'room_avatar', 'room_notice', 'room_bg', 'room_need','room_name']
+        select: ['room_id', 'room_user_id', 'room_avatar', 'room_notice', 'room_bg', 'room_need', 'room_name']
       })
       if (!room_info) {
         client.emit('tips', {

@@ -91,7 +91,7 @@ export class UsersService {
       'user_sex',
       'user_signature',
       'user_room_bg',
-      'user_avatar'
+      'user_avatar',
     ]
     const updateInfo: any = {}
     canModify.forEach((item) => {
