@@ -121,11 +121,12 @@ export class ChattingGateway {
     //引用消息 拿到引用消息的具体内容
     const {
       id: quote_message_id,
-      message: quote_message_content,
+      message_content: quote_message_content,
       message_type: quote_message_type,
       user_info: quoteUserInfo = {}, } = quote_message;
 
-    const { id: quote_user_id, user_nickname: quote_user_nickname } = quoteUserInfo
+
+    const { user_id: quote_user_id, user_nickname: quote_user_nickname } = quoteUserInfo
 
     //发送的消息数据 存入数据库
     const { user_nickname, user_avatar, user_role, id } = await this.getUserInfoByClientId(client.id)
@@ -243,7 +244,7 @@ export class ChattingGateway {
   //点歌 将歌曲添加到房间歌单列表
   @SubscribeMessage('chooseMusic')
   async handleChooseMusic(client: Socket, music: any) {
-    
+
     const { user_id, room_id } = this.clientMap[client.id]
     const userInfo: any = await this.getUserInfoByClientId(client.id)
     const { music_name, music_mid, music_singer } = music
@@ -312,6 +313,10 @@ export class ChattingGateway {
     })
   }
 
+  @SubscribeMessage('upMusic')
+  async handleUpMusic(client: Socket, music: any) {
+
+  }
 
 
 
@@ -342,7 +347,7 @@ export class ChattingGateway {
       music_info.choose_user_id = user_info ? user_info.id : -1
       //获取歌曲地址和歌词
       let { music_lrc, music_src, music_downloadSrc } = await getMusicSRC(mid)
-      music_src=music_src+`?${new Date().getTime()}`
+      music_src = music_src + `?${new Date().getTime()}`
       this.roomList[Number(room_id)].music_info = music_info
       this.roomList[Number(room_id)].music_src = music_src
       this.roomList[Number(room_id)].music_lrc = music_lrc
