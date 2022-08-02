@@ -19,12 +19,12 @@ export class RoomEntity extends TimeEntity {
   @Column({ length: 255, nullable: true, comment: '房间密码' })
   room_password: string;
 
-  @Column({ length: 255, nullable: true, comment: '房间略缩图' })
+  @Column({ length: 500, nullable: true, comment: '房间略缩图' })
   room_avatar: string;
 
   @Column({ length: 500, default: '房间暂无公告', comment: '房间公告' })
   room_notice: string;
 
-  @Column({ length: 255, nullable: true, comment: '房间背景' })
+  @Column({ length: 500, nullable: true, comment: '房间背景' })
   room_bg: string;
 }

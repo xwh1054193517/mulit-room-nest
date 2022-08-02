@@ -17,7 +17,7 @@ import { getMusicInfo, getMusicSRC } from 'src/utils/music';
 
 
 //开启websocket服务
-@WebSocketGateway(4001, {
+@WebSocketGateway(3002, {
   //兼容socketIO2.x
   allowEIO3: true,
   path: '/chat',
@@ -63,18 +63,21 @@ export class ChattingGateway {
   }
 
   /* -----------------------用户操作------------------------*/
-  async handleConnect(client: Socket): Promise<any> {
+  async handleConnection(client: Socket): Promise<any> {
     this.connectToRoom(client, client.handshake.query)
+
   }
 
   //用户断开连接 
   async handleDisconnect(client: Socket) {
+
     const clientUser = this.clientMap[client.id]
     if (!clientUser) return
     //删除用户
     delete this.clientMap[client.id]
     const { user_id, room_id } = clientUser
     const { online_user_list, room_info, room_admin } = this.roomList[Number(room_id)]
+    console.log(`用户离开了${room_id}`);
     //拿到名称用于广播
     let user_nickname;
     const shoulddelIdx = online_user_list.findIndex((item) => {
@@ -92,14 +95,16 @@ export class ChattingGateway {
       //通知所有人 每个在线用户 房间列表更新
       const { room_name } = room_info
       const { user_nickname: roomAdminNickname } = room_admin
-      return this.socketServer.emit('updateRoomList', {
+      return this.socketServer.emit('updateRoomlist', {
         room_list: formatRoomlist(this.roomList),
         msg: `${roomAdminNickname}的房间${room_name}(id:${room_id})因为全部人退出而关闭`
       })
     }
+    this.socketServer.emit('updateRoomlist', {
+      room_list: formatRoomlist(this.roomList),
+    })
     //通知用户离开 通知这个房间的
     ///这里的身份好像不对劲 
-    console.log(user_id);
     this.socketServer.to(room_id).emit('offline', {
       code: 1,
       online_user_list: formatUser(online_user_list, room_admin.id),
@@ -116,11 +121,11 @@ export class ChattingGateway {
     //引用消息 拿到引用消息的具体内容
     const {
       id: quote_message_id,
-      message: quote_message_content,
+      message_content: quote_message_content,
       message_type: quote_message_type,
       user_info: quoteUserInfo = {}, } = quote_message;
 
-    const { id: quote_user_id, user_nickname: quote_user_nickname } = quoteUserInfo
+    const { user_id: quote_user_id, user_nickname: quote_user_nickname } = quoteUserInfo
 
     //发送的消息数据 存入数据库
     const { user_nickname, user_avatar, user_role, id } = await this.getUserInfoByClientId(client.id)
@@ -142,7 +147,7 @@ export class ChattingGateway {
       quote_message_id,
       quote_message_content,
       quote_message_type,
-      quote_message_status: 1,
+      quote_message_statue: 1,
     })
 
     //发送socket
@@ -153,6 +158,8 @@ export class ChattingGateway {
   @SubscribeMessage('updateRoomUser')
   async handleUserUpdate(client: Socket, newInfo: any) {
     const { room_id } = this.clientMap[client.id]
+    console.log(this.roomList);
+
 
     //拿到这个房间里online_user_list的某个用户 引用直接改值 能修改原数据
     const oldInfo = await this.getUserInfoByClientId(client.id)
@@ -161,7 +168,7 @@ export class ChattingGateway {
     })
 
     //拿到这个list去更新
-    const { online_user_list } = this.roomList[Number[room_id]]
+    const { online_user_list } = this.roomList[Number(room_id)]
     this.socketServer.to(room_id).emit('updateOnlineUser', { online_user_list })
   }
 
@@ -176,7 +183,7 @@ export class ChattingGateway {
       room_list: formatRoomlist(this.roomList),
       msg: `房主${user_nickname}修改了房间${room_id}的信息`
     }
-    this.socketServer.to(room_id).emit('updateRoomlist', res)
+    this.socketServer.emit('updateRoomlist', res)
   }
 
   //撤回信息 返回撤回的信息id和信息内容
@@ -232,12 +239,13 @@ export class ChattingGateway {
       message_type: 'info',
       message_content: `${user_nickname} 切掉了${music_name}(${music_singer})`,
     })
-    this.changeMusic(Number(room_id))
+    this.changeMusic(room_id)
   }
 
   //点歌 将歌曲添加到房间歌单列表
   @SubscribeMessage('chooseMusic')
   async handleChooseMusic(client: Socket, music: any) {
+
     const { user_id, room_id } = this.clientMap[client.id]
     const userInfo: any = await this.getUserInfoByClientId(client.id)
     const { music_name, music_mid, music_singer } = music
@@ -264,7 +272,7 @@ export class ChattingGateway {
     music.user_info = userInfo
     music_queue_list.push(music)
     this.chooseMusicTimewithUser[user_id] = getTimeSpace()
-    client.emit('success', { code: 1, msg: `点歌成功` })
+    client.emit('tips', { code: 1, msg: `点歌成功` })
     this.socketServer.to(room_id).emit('chooseMusic', {
       code: 1,
       music_queue_list,
@@ -293,7 +301,8 @@ export class ChattingGateway {
         msg: '非管理员或者房主只能移除自己点的歌曲哦'
       })
     }
-    const delMusicIdx = music_queue_list.findIndex((item) => item.music_mid = music_mid)
+    const delMusicIdx = music_queue_list.findIndex((item) => item.music_mid == music_mid)
+    
     music_queue_list.splice(delMusicIdx, 1)
     client.emit('tips', {
       code: 1,
@@ -306,7 +315,33 @@ export class ChattingGateway {
     })
   }
 
+  //顶歌 将选中的歌顶到第一
+  @SubscribeMessage('upMusic')
+  async handleUpMusic(client: Socket, music: any) {
+    //获取用户id,房间id
+    const { user_id, room_id } = this.clientMap[client.id]
+    //获取顶歌的歌曲信息
+    const { music_mid, music_name, music_singer, user_info } = music
+    //获取点歌人信息
+    
+    const { user_role, id } = user_info
+    //获得房间歌曲列表
+    const { music_queue_list } = this.roomList[Number(room_id)]
+    //获得删歌曲人的信息 
+    const { user_nickname } = await this.getUserInfoByClientId(client.id)
 
+    const upMusicIdx = music_queue_list.findIndex((item) => item.music_mid == music_mid)
+    const upMusic=music_queue_list.splice(upMusicIdx, 1)[0]
+    music_queue_list.unshift(upMusic);
+    client.emit('tips', {
+      code: 1,
+      msg: `成功顶歌(${music_name}(${music_singer}))`
+    })
+    this.socketServer.to(room_id).emit('chooseMusic', {
+      code: 1,
+      music_queue_list,
+    })
+  }
 
 
   /* ---------------------辅助函数-------------------*/
@@ -330,13 +365,14 @@ export class ChattingGateway {
     //获取下一首歌的mid，点歌人信息
     const { mid, user_info, music_queue_list } = await this.getNextMusic(room_id);
     try {
-
       //获得歌曲的详细信息
       const { music_info } = await getMusicInfo(mid)
       //如果有点歌人，就带上他的id，没有标为-1为系统随机播放
       music_info.choose_user_id = user_info ? user_info.id : -1
       //获取歌曲地址和歌词
-      const { music_lrc, music_src, music_downloadSrc } = await getMusicSRC(mid)
+      let { music_lrc, music_src, music_downloadSrc } = await getMusicSRC(mid)
+      music_downloadSrc = music_downloadSrc + `?${new Date().getTime()}`
+      music_src = music_src ? music_src + `?${new Date().getTime()}` : music_downloadSrc
       this.roomList[Number(room_id)].music_info = music_info
       this.roomList[Number(room_id)].music_src = music_src
       this.roomList[Number(room_id)].music_lrc = music_lrc
@@ -351,6 +387,10 @@ export class ChattingGateway {
         musicInfo: { music_info, music_src, music_lrc, music_downloadSrc, music_queue_list },
         msg: `正在播放${user_info ? user_info.user_nickname : '系统随机'}点播的${music_name}(${music_singer}-${music_album})`
       })
+      // console.log('切歌了:', {
+      //   musicInfo: { music_info, music_src, music_lrc, music_downloadSrc, music_queue_list },
+      //   msg: `正在播放${user_info ? user_info.user_nickname : '系统随机'}点播的${music_name}(${music_singer}-${music_album})`
+      // });
 
       //设置定时器，歌曲时长结束后自动切歌,每次切歌都先清除然后再设置
       clearTimeout(this.timerInRoom[`timer${room_id}`])
@@ -364,7 +404,7 @@ export class ChattingGateway {
       //歌曲信息出错 就说明这个歌曲不能播放了，切换下一首
       music_queue_list.shift()
       this.changeMusic(room_id)
-      return this.socketServer.to(room_id).emit('info', {
+      return this.socketServer.to(room_id).emit('notice', {
         code: -1,
         msg: `当前歌曲无法播放，已自动跳过`
       })
@@ -456,6 +496,8 @@ export class ChattingGateway {
     try {
       //获得用户身份 验证是否登录
       const { token, address, room_id = 555 } = query
+      console.log(`用户进入了房间${room_id}`);
+
       const payload = await verfiyJwt(token)
       const { user_id } = payload
       if (user_id === -1 || !token) {
@@ -497,7 +539,7 @@ export class ChattingGateway {
       //查询房间的信息
       const room_info = await this.RoomRepository.findOne({
         where: { room_id },
-        select: ['room_id', 'room_user_id', 'room_avatar', 'room_notice', 'room_bg', 'room_need']
+        select: ['room_id', 'room_user_id', 'room_avatar', 'room_notice', 'room_bg', 'room_need', 'room_name', 'room_password']
       })
       if (!room_info) {
         client.emit('tips', {

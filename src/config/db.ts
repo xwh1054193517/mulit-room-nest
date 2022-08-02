@@ -19,13 +19,14 @@ const proConfig: DataSourceOptions = {
   type: 'mysql',
   port: 3306,
   host: process.env.DBHOST_PRO,
-  username: process.env.USERNAEM_PRO,
+  username: process.env.USERNAME_PRO,
   password: process.env.PASSWORD_PRO,
-  database: process.env.DBE_PRO,
+  database: process.env.DBNAME_PRO,
   entities: [join(__dirname, '../', '**/**.entity{.ts,.js}')],
   logging: false,
   synchronize: true,
 };
 
-const config: DataSourceOptions = process.env.NODE_ENV == 'production' ? proConfig : devConfig;
+const config: DataSourceOptions=  devConfig
+
 export default config;

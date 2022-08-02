@@ -43,6 +43,7 @@ export class MusicService {
   async collectMusic(payload, params) {
     const { music_mid } = params
     const { user_id, user_role } = payload
+
     const count = await this.CollectRepository.count({
       where: { music_mid, user_id, is_delete: 1 }
     })
@@ -50,13 +51,15 @@ export class MusicService {
       throw new HttpException('你已经收藏过这首歌曲了', HttpStatus.BAD_REQUEST)
     }
     const music = Object.assign({ user_id }, params)
-    console.log(music);
+
     await this.CollectRepository.save(music)
     user_role === 'admin' && (music.is_recommend = 1)
     const mus = await this.MusicRepository.count({ where: { music_mid } })
     if (mus) {
       if (user_role === 'admin') {
         return await this.MusicRepository.update({ music_mid }, { is_recommend: 1 })
+      } else {
+        return
       }
     }
     return await this.MusicRepository.save(music)
@@ -82,6 +85,8 @@ export class MusicService {
   async removeCollect(payload, params) {
     const { music_mid } = params;
     const { user_id } = payload;
+    console.log(params);
+
     const c = await this.CollectRepository.findOne({
       where: { user_id, music_mid }
     })
@@ -96,6 +101,8 @@ export class MusicService {
 
   //获取热门歌曲
   async getHotList(params) {
+    console.log(params);
+
     const { page = 1, pagesize = 20, user_id = 1 } = params;
     return await this.CollectRepository.find({
       where: { user_id, is_delete: 1 },

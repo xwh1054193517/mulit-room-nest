@@ -26,7 +26,6 @@ export const searchSong = async (param, page, pagesize) => {
 
 //快速少量搜索
 export const searchQuick = async (param) => {
-  console.log(param);
   const ret = []
   let request = []
   try {
@@ -68,7 +67,7 @@ export const getMusicInfo = async (mid) => {
     }
     music_info.music_mid = mid
     music_info.music_name = res.track_info.name
-    music_info.music_albumPic = `https://y.gtimg.cn/music/photo_new/T002R300x300M000${res.track_info.album.mid}.jpg`
+    music_info.music_albumPic = res.track_info.album.mid ? `https://y.gtimg.cn/music/photo_new/T002R300x300M000${res.track_info.album.mid}.jpg` : res.track_info.album.mid
     music_info.music_album = res.track_info.album.name
     music_info.music_singer = res.track_info.singer[0].name
     music_info.music_duration = res.track_info.interval

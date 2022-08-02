@@ -63,8 +63,6 @@ export class UsersService {
   async getUserInfo(payload) {
 
     const { user_id: id, exp } = payload
-    console.log(payload);
-
     const res = await this.UserRepository.findOne({
       where: { id: id },
       select: [
@@ -93,7 +91,8 @@ export class UsersService {
       'user_sex',
       'user_signature',
       'user_room_bg',
-      'user_avatar'
+      'user_avatar',
+            'user_room_id',
     ]
     const updateInfo: any = {}
     canModify.forEach((item) => {

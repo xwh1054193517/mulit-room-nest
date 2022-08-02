@@ -100,6 +100,8 @@ export class ChattingService {
     canModify.forEach((key) => {
       Object.keys(params).includes(key) && (updateInfo[key] = params[key])
     })
+
+    
     await this.RoomRepository.update({ room_id }, updateInfo);
     return true
   }
@@ -124,12 +126,10 @@ export class ChattingService {
       !quoteMessageId.includes(item.quote_message_id) && quoteMessageId.push(item.quote_message_id)
     })
 
-
     const userInfoList = await this.UserRepository.find({
       where: { id: In(userId) },
       select: ['id', 'user_nickname', 'user_avatar', 'user_role'],
     })
-
     userInfoList.forEach((item: any) => (item.user_id = item.id))
 
     //引用信息
@@ -147,19 +147,20 @@ export class ChattingService {
     //对引用消息拿到user_nick 并修改字段名称
     messageInfoList.forEach((item: any) => {
       item.quote_user_nickname = userInfoList.find((user: any) => user.user_id === item.user_id)['user_nickname'];
-      item.quote_content = JSON.parse(item.message_content);
-      item.quote_type = item.message_type;
-      item.quote_status = item.message_statue;
-      item.quote_id = item.id;
+      item.quote_message_content = JSON.parse(item.message_content);
+      item.quote_message_type = item.message_type;
+      item.quote_message_statue = item.message_statue;
+      item.quote_message_id = item.id;
       item.quote_user_id = item.user_id
       delete item.message_content;
       delete item.message_type;
     })
 
+
     // 组装信息 带上发消息人的信息 ，已经引用的消息的用户 消息具体信息
     messageInfo.forEach((item: any) => {
       item.user_info = userInfoList.find((user: any) => user.user_id === item.user_id)
-      item.quote_info = messageInfoList.find((mes) => mes.id === item.quote_message_id)
+      item.quote_info = messageInfoList.find((msg: any) => msg.quote_message_id == item.quote_message_id)
       item.message_statue === 2 && (item.message_content = `${item.user_info.user_nickname}刚撤回了一条不为人知的消息 `);
       item.message_statue === 2 && (item.message_type = 'info');
       item.message_content && item.message_statue === 1 && (item.message_content = JSON.parse(item.message_content))

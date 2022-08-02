@@ -7,8 +7,8 @@ export class CollectEntity extends TimeEntity {
   @Column({ comment: '用户id' })
   user_id: number;
 
-  @Column({ comment: '歌曲mid' })
-  music_mid: number;
+  @Column({length:64, comment: '歌曲mid' })
+  music_mid: string;
 
   @Column({ length: 255, comment: '歌曲名字' })
   music_name: string;
