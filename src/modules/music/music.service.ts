@@ -85,7 +85,6 @@ export class MusicService {
   async removeCollect(payload, params) {
     const { music_mid } = params;
     const { user_id } = payload;
-    console.log(params);
 
     const c = await this.CollectRepository.findOne({
       where: { user_id, music_mid }
@@ -101,7 +100,6 @@ export class MusicService {
 
   //获取热门歌曲
   async getHotList(params) {
-    console.log(params);
 
     const { page = 1, pagesize = 20, user_id = 1 } = params;
     return await this.CollectRepository.find({
